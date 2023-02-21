@@ -1,0 +1,84 @@
+{
+	"definition": {
+		"$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+		"actions": {
+			"GetObjectNodeName": {
+				"inputs": {
+					"variables": [
+						{
+							"name": "ObjectNode",
+							"type": "string",
+							"value": "@{xpath(xml(triggerBody()),concat('name(',variables('RootNode'),'/*)'))}"
+						}
+					]
+				},
+				"runAfter": {
+					"GetRootNodeName": [
+						"Succeeded"
+					]
+				},
+				"type": "InitializeVariable"
+			},
+			"GetRootNodeName": {
+				"inputs": {
+					"variables": [
+						{
+							"name": "RootNode",
+							"type": "string",
+							"value": "@{xpath(xml(triggerBody()),'name(/*)')}"
+						}
+					]
+				},
+				"runAfter": {},
+				"type": "InitializeVariable"
+			},
+			"TransformXml2Json": {
+				"inputs": "@json(xml(triggerBody()))",
+				"runAfter": {
+					"GetObjectNodeName": [
+						"Succeeded"
+					]
+				},
+				"type": "Compose"
+			},
+			"GetLastElement": {
+				"inputs": "@last(outputs('TransformXml2Json')[variables('RootNode')][variables('ObjectNode')])",
+				"runAfter": {
+					"TransformXml2Json": [
+						"Succeeded"
+					]
+				},
+				"type": "Compose"
+			},
+			"Response": {
+				"inputs": {
+					"body": "@outputs('GetLastElement')",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"statusCode": 200
+				},
+				"kind": "Http",
+				"runAfter": {
+					"GetLastElement": [
+						"Succeeded"
+					]
+				},
+				"type": "Response"
+			}
+		},
+		"contentVersion": "1.0.0.0",
+		"outputs": {},
+		"parameters": {},
+		"triggers": {
+			"manual": {
+				"inputs": {
+					"method": "POST"
+				},
+				"kind": "Http",
+				"type": "Request"
+			}
+		}
+	},
+	"parameters": {}
+}
