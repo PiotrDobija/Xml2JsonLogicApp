@@ -1,0 +1,100 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Response": {
+                "inputs": {
+                    "body": "@outputs('TransformXml2Json')",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "TransformXml2Json": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "TransformXml2Json": {
+                "inputs": "@json(xml(body('Transform_XML')))",
+                "runAfter": {
+                    "Transform_XML": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose"
+            },
+            "Transform_XML": {
+                "inputs": {
+                    "content": "@{triggerBody()}",
+                    "integrationAccount": {
+                        "map": {
+                            "name": "orders2lastorder"
+                        }
+                    }
+                },
+                "runAfter": {
+                    "XML_Validation": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Xslt"
+            },
+            "XML_Validation": {
+                "inputs": {
+                    "content": "@{triggerBody()}",
+                    "integrationAccount": {
+                        "schema": {
+                            "name": "orders"
+                        }
+                    }
+                },
+                "runAfter": {},
+                "type": "XmlValidation"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "properties": {
+                            "Orders": {
+                                "properties": {
+                                    "Order": {
+                                        "items": {
+                                            "properties": {
+                                                "Count": {
+                                                    "type": "int"
+                                                },
+                                                "Name": {
+                                                    "type": "string"
+                                                },
+                                                "Price": {
+                                                    "type": "int"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {}
+}
