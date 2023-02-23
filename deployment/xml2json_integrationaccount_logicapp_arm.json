@@ -1,0 +1,156 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "integrationAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Integration Account."
+      }
+    },
+    "logicAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Logic App."
+      }
+    },
+    "xsltMapName": {
+        "type": "string",
+        "metadata": {
+            "description": "Name of the XSLT map."
+        }
+    },
+     "schemaName": {
+        "type": "string",
+        "metadata": {
+            "description": "Name of the XSD schema map."
+        }
+    }
+  },
+  "variables": { },
+  "resources": [
+    {
+      "properties": { },
+      "sku": {
+        "name": "Free"
+      },
+      "name": "[parameters('integrationAccountName')]",
+      "type": "Microsoft.Logic/integrationAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2019-05-01"
+    },
+    {
+      "properties": {
+        "mapType": "xslt20",
+        "content": "<xsl:stylesheet version=\"2.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"xml\" omit-xml-declaration=\"yes\" /><xsl:template match=\"/\"><Order><Name><xsl:value-of select=\"Orders/Order[last()]/Name/text()\"/></Name><Price><xsl:value-of select=\"Orders/Order[last()]/Price/text()\"/></Price><Count><xsl:value-of select=\"Orders/Order[last()]/Count/text()\"/></Count></Order></xsl:template></xsl:stylesheet>",
+        "contentType": "application/xml"
+      },
+      "name": "[concat(parameters('integrationAccountName'), '/',parameters('xsltMapName'))]",
+      "type": "Microsoft.Logic/integrationAccounts/maps",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Logic/integrationAccounts', parameters('integrationAccountName'))]"
+      ]
+    },
+    {
+      "properties": {
+        "schemaType":"xml",
+        "content": "<xs:schema attributeFormDefault=\"unqualified\" elementFormDefault=\"qualified\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"><xs:element name=\"Orders\"><xs:complexType><xs:sequence><xs:element name=\"Order\" maxOccurs=\"unbounded\" minOccurs=\"0\"><xs:complexType><xs:sequence><xs:element type=\"xs:string\" name=\"Name\"/><xs:element type=\"xs:int\" name=\"Price\"/><xs:element type=\"xs:int\" name=\"Count\" minOccurs=\"0\"/></xs:sequence></xs:complexType></xs:element></xs:sequence></xs:complexType></xs:element></xs:schema>",
+        "contentType": "application/xml"
+      },
+      "name": "[concat(parameters('integrationAccountName'), '/',parameters('schemaName'))]",
+      "type": "Microsoft.Logic/integrationAccounts/schemas",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Logic/integrationAccounts', parameters('integrationAccountName'))]"
+      ]
+    },
+    {
+      "name": "[parameters('logicAppName')]",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-06-01",
+      "properties": {
+        "integrationAccount": {
+          "id": "[resourceId('Microsoft.Logic/integrationAccounts', parameters('integrationAccountName'))]"
+        },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Response": {
+                "inputs": {
+                    "body": "@outputs('TransformXml2Json')",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "TransformXml2Json": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "TransformXml2Json": {
+                "inputs": "@json(xml(body('Transform_XML')))",
+                "runAfter": {
+                    "Transform_XML": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose"
+            },
+            "Transform_XML": {
+                "inputs": {
+                    "content": "@{triggerBody()}",
+                    "integrationAccount": {
+                        "map": {
+                            "name": "[parameters('xsltMapName')]"
+                        }
+                    }
+                },
+                "runAfter": {
+                    "XML_Validation": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Xslt"
+            },
+            "XML_Validation": {
+                "inputs": {
+                    "content": "@{triggerBody()}",
+                    "integrationAccount": {
+                        "schema": {
+                            "name": "[parameters('schemaName')]"
+                        }
+                    }
+                },
+                "runAfter": {},
+                "type": "XmlValidation"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "method": "POST",
+                    "schema": {}
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {}
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Logic/integrationAccounts', parameters('integrationAccountName'))]"
+      ]
+    }
+  ],
+  "outputs": { }
+}
