@@ -32,7 +32,7 @@
                     "content": "@{triggerBody()}",
                     "integrationAccount": {
                         "map": {
-                            "name": "orders2lastorder"
+                            "name": "collection2singleobject"
                         }
                     }
                 },
@@ -48,7 +48,7 @@
                     "content": "@{triggerBody()}",
                     "integrationAccount": {
                         "schema": {
-                            "name": "orders"
+                            "name": "objects"
                         }
                     }
                 },
@@ -63,33 +63,7 @@
             "manual": {
                 "inputs": {
                     "method": "POST",
-                    "schema": {
-                        "properties": {
-                            "Orders": {
-                                "properties": {
-                                    "Order": {
-                                        "items": {
-                                            "properties": {
-                                                "Count": {
-                                                    "type": "int"
-                                                },
-                                                "Name": {
-                                                    "type": "string"
-                                                },
-                                                "Price": {
-                                                    "type": "int"
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "type": "array"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        },
-                        "type": "object"
-                    }
+                    "schema": {}
                 },
                 "kind": "Http",
                 "type": "Request"
