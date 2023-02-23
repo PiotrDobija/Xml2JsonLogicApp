@@ -1,3 +1,6 @@
+The deployment with ARM templates is **recommended**, because second logic app has references to the schema/map in the integration account.
+The ARM template contains all the details inside
+
 In the project you can find 2 logic apps with ARM templates for both.
 
 1. Fist logic app doesn't contain any references to the schemas or maps, the transformation is done by using xpath and few build in expressions. 
